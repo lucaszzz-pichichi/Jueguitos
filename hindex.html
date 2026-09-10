@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Una aventura para Narelinda 💕</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Fuentes desde Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Pacifico&display=swap" rel="stylesheet">
+    
+    <!-- Estilos de visibilidad y minijuegos -->
+    <style>
+        .screen { display: none !important; }
+        .screen.active { display: block !important; }
+        
+        .level-content { display: none !important; }
+        .level-content.active { display: block !important; }
+
+        /* Nivel 2: Memotest */
+        .memory-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .memory-card {
+            aspect-ratio: 1;
+            background: #ffe3e8;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+            cursor: pointer;
+            user-select: none;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+            border: 2px solid #ffb6c1;
+            transition: transform 0.3s ease, background-color 0.3s ease;
+        }
+
+        .memory-card.flipped {
+            background: #ffffff;
+            border-color: #ff5e7e;
+            transform: rotateY(180deg);
+        }
+
+        .memory-card.matched {
+            background: #e8f5e9;
+            border-color: #81c784;
+            pointer-events: none;
+            opacity: 0.85;
+        }
+
+        /* Nivel 3: Quiz */
+        .quiz-container {
+            margin: 15px 0;
+            text-align: left;
+        }
+
+        .quiz-question-text {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #5a3d46;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .quiz-btn-option {
+            background: #ffffff;
+            border: 2px solid #ffd1dc;
+            padding: 12px 15px;
+            border-radius: 15px;
+            color: #5a3d46;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+        }
+
+        .quiz-btn-option:active {
+            transform: scale(0.98);
+        }
+
+        .quiz-btn-option.correct {
+            background-color: #e8f5e9 !important;
+            border-color: #81c784 !important;
+            color: #2e7d32 !important;
+        }
+
+        .quiz-btn-option.wrong {
+            background-color: #ffe6e6 !important;
+            border-color: #ff8a80 !important;
+            color: #c62828 !important;
+            animation: shake 0.4s ease;
+        }
+
+        /* Nivel 4: Catch Game */
+        .catch-game-area {
+            position: relative;
+            width: 100%;
+            height: 280px;
+            background: #fff5f7;
+            border: 2px dashed #ffb6c1;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 15px 0;
+            cursor: pointer;
+        }
+
+        .falling-heart {
+            position: absolute;
+            font-size: 28px;
+            user-select: none;
+            top: -40px;
+            animation: fall 2.5s linear infinite;
+        }
+
+        @keyframes fall {
+            0% { top: -40px; }
+            100% { top: 300px; }
+        }
+
+        /* Nivel 5: Sliding Puzzle */
+        .puzzle-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            width: 240px;
+            height: 240px;
+            margin: 15px auto;
+            background: #ffd1dc;
+            padding: 6px;
+            border-radius: 12px;
+        }
+
+        .puzzle-tile {
+            background: #ff5e7e;
+            color: white;
+            font-weight: bold;
+            font-size: 22px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 8px;
+            cursor: pointer;
+            user-select: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .puzzle-tile.empty {
+            background: transparent;
+            box-shadow: none;
+            cursor: default;
+        }
+
+        /* Estilos generales de tarjeta y textos */
+        .hidden { display: none !important; }
+        .romantic-text {
+            font-style: italic;
+            color: #6c4b5e;
+            margin: 10px 0;
+        }
+        .victory-message {
+            text-align: center;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Fondo de corazones flotantes -->
+    <div class="hearts-background" id="heartsBackground"></div>
+
+    <!-- Contenedor principal -->
+    <main class="app-container">
+
+        <!-- PANTALLA INICIAL / BIENVENIDA -->
+        <section id="screen-welcome" class="screen active">
+            <div class="card welcome-card">
+                <div class="floating-icon">💖</div>
+                <h1 class="main-title">Bienvenida a nuestra aventura ❤️</h1>
+                <p class="subtitle">Esta aventura fue creada especialmente para vos, <span>Narelinda</span>.</p>
+                
+                <button type="button" id="btn-start" class="btn-primary">
+                    COMENZAR AVENTURA 💕
+                </button>
+            </div>
+        </section>
+
+        <!-- MAPA DE LA AVENTURA -->
+        <section id="screen-adventure" class="screen">
+            <header class="adventure-header">
+                <h2>Una aventura para Narelinda</h2>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progressBar" style="width: 16%;"></div>
+                </div>
+            </header>
+
+            <!-- ESCENARIO DE JUEGO -->
+            <div id="game-stage" class="game-stage">
+                
+                <!-- NIVEL 1: ENCONTRAR LOS CORAZONES -->
+                <div id="level-1" class="level-content active">
+                    <div class="card game-card">
+                        <span class="level-badge">Nivel 1</span>
+                        <h3 class="level-title">Busca los Corazones Ocultos 🔍❤️</h3>
+                        <p class="level-instructions">Encuentra los 4 corazones especiales ocultos entre los elementos.</p>
+                        
+                        <div class="counter-box">
+                            Encontrados: <span id="hearts-found-count">0</span> / 4 💕
+                        </div>
+
+                        <!-- Tablero de elementos -->
+                        <div class="find-grid" id="findGrid"></div>
+
+                        <!-- Mensaje de Victoria Nivel 1 -->
+                        <div id="level1-victory" class="victory-message hidden">
+                            <div class="victory-icon">🎉✨</div>
+                            <h4>¡Increíble, mi vida!</h4>
+                            <p class="romantic-text">
+                                "Entre millones de estrellas y cosas en el mundo, mi corazón siempre te encuentra a vos."
+                            </p>
+                            <button type="button" id="btn-next-level-1" class="btn-primary">
+                                Siguiente Nivel 🧠💕
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NIVEL 2: JUEGO DE MEMORIA -->
+                <div id="level-2" class="level-content">
+                    <div class="card game-card">
+                        <span class="level-badge">Nivel 2</span>
+                        <h3 class="level-title">Juego de Memoria 🧠💕</h3>
+                        <p class="level-instructions">Encuentra las parejas de cartas iguales.</p>
+
+                        <!-- Tablero del Memotest -->
+                        <div class="memory-grid" id="memoryGrid"></div>
+
+                        <!-- Mensaje de Victoria Nivel 2 -->
+                        <div id="level2-victory" class="victory-message hidden">
+                            <div class="victory-icon">👩‍❤️‍👨✨</div>
+                            <h4>¡Qué memoria la tuya! 🥰</h4>
+                            <p class="romantic-text">
+                                "Nuestros recuerdos juntos son mi tesoro más preciado. Cada momento a tu lado queda grabado para siempre."
+                            </p>
+                            <button type="button" id="btn-next-level-2" class="btn-primary">
+                                Siguiente Nivel ❓💘
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NIVEL 3: TRIVIA / ¿CUÁNTO NOS CONOCEMOS? -->
+                <div id="level-3" class="level-content">
+                    <div class="card game-card">
+                        <span class="level-badge">Nivel 3</span>
+                        <h3 class="level-title">¿Cuánto nos conocemos? ❓💘</h3>
+                        
+                        <div class="counter-box" id="quiz-step-indicator">
+                            Pregunta 1 de 3 📝
+                        </div>
+
+                        <!-- Pregunta y Opciones -->
+                        <div class="quiz-container">
+                            <p class="quiz-question-text" id="quiz-question">Cargando pregunta...</p>
+                            <div class="quiz-options" id="quiz-options"></div>
+                        </div>
+
+                        <!-- Mensaje de Victoria Nivel 3 -->
+                        <div id="level3-victory" class="victory-message hidden">
+                            <div class="victory-icon">👑💕</div>
+                            <h4>¡Sos una experta sobre nosotros! 😍</h4>
+                            <p class="romantic-text">
+                                "Me encanta saber que prestás atención a cada detalle de nuestra historia. Sos lo más lindo de mi vida."
+                            </p>
+                            <button type="button" id="btn-next-level-3" class="btn-primary">
+                                Siguiente Nivel 🎯💖
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NIVEL 4: ATRAPA LOS CORAZONES -->
+                <div id="level-4" class="level-content">
+                    <div class="card game-card">
+                        <span class="level-badge">Nivel 4</span>
+                        <h3 class="level-title">Atrapa los Corazones 🎯💖</h3>
+                        <p class="level-instructions">Toca los corazones que van cayendo antes de que se escapen.</p>
+
+                        <div class="counter-box">
+                            Atrapados: <span id="catch-count">0</span> / 5 💕
+                        </div>
+
+                        <div class="catch-game-area" id="catchGameArea"></div>
+
+                        <div id="level4-victory" class="victory-message hidden">
+                            <div class="victory-icon">💘🚀</div>
+                            <h4>¡Atrapaste todo mi amor! 🥰</h4>
+                            <p class="romantic-text">
+                                "Así como atrapaste cada corazón, vos atrapaste el mío desde el primer día."
+                            </p>
+                            <button type="button" id="btn-next-level-4" class="btn-primary">
+                                Siguiente Nivel 🧩❤️
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NIVEL 5: NUESTRO ROMPECABEZAS -->
+                <div id="level-5" class="level-content">
+                    <div class="card game-card">
+                        <span class="level-badge">Nivel 5</span>
+                        <h3 class="level-title">Nuestro Rompecabezas 🧩❤️</h3>
+                        <p class="level-instructions">Ordena los números del 1 al 8 haciendo clic en las piezas contiguas al espacio vacío.</p>
+
+                        <div class="puzzle-grid" id="puzzleGrid"></div>
+
+                        <div id="level5-victory" class="victory-message hidden">
+                            <div class="victory-icon">🧩✨</div>
+                            <h4>¡Piezas encajadas a la perfección! 💖</h4>
+                            <p class="romantic-text">
+                                "Sos la pieza que le daba sentido a todo mi rompecabezas."
+                            </p>
+                            <button type="button" id="btn-next-level-5" class="btn-primary">
+                                Ver Regalo Final 💌✨
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PANTALLA FINAL: CARTA PERSONALIZADA -->
+                <div id="level-final" class="level-content">
+                    <div class="card game-card" style="text-align: center;">
+                        <div class="victory-icon">🎉💌</div>
+                        <h3 class="level-title">¡Llegaste al Final! 💕</h3>
+                        
+                        <p class="romantic-text" style="font-size: 1.1rem; line-height: 1.6; margin: 20px 0; color: #4a4a4a;">
+                            Muy bien corazón, llegaste hasta el final de este pequeño jueguito, te amo infinidades. 
+                            Tu premio son infinitos beshitos y cosquillitas jijiji, gracias por jugar amor.
+                        </p>
+
+                        <h2 style="color: #e63946; font-size: 1.3rem; margin: 25px 0 15px 0;">
+                            ¿Te gustaría ser mi novia mi amor? 💍✨
+                        </h2>
+
+                        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+                            <button class="btn-primary" onclick="alert('¡Sabía que me ibas a decir que sí! Te amo infinidades 💖👩‍❤️‍👨')" style="font-size: 1.1rem; padding: 12px 24px;">
+                                ¡Sí, acepto! 💖
+                            </button>
+                        </div>
+
+                        <div style="font-size: 40px; margin-top: 25px;">👩‍❤️‍👨✨💖</div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const btnStart = document.getElementById('btn-start');
+        const screenWelcome = document.getElementById('screen-welcome');
+        const screenAdventure = document.getElementById('screen-adventure');
+
+        if (btnStart) {
+            btnStart.addEventListener('click', () => {
+                screenWelcome.classList.remove('active');
+                screenAdventure.classList.add('active');
+                initLevel1();
+            });
+        }
+
+        // ==========================================
+        // LÓGICA DEL NIVEL 1
+        // ==========================================
+        function initLevel1() {
+            const findGrid = document.getElementById('findGrid');
+            const heartsFoundCount = document.getElementById('hearts-found-count');
+            const level1Victory = document.getElementById('level1-victory');
+            const btnNextLevel1 = document.getElementById('btn-next-level-1');
+
+            if (!findGrid) return;
+
+            findGrid.innerHTML = '';
+            let foundCount = 0;
+            const totalHearts = 4;
+
+            const itemsData = [
+                { icon: '⭐', isHeart: false },
+                { icon: '🌸', isHeart: false },
+                { icon: '💖', isHeart: true },
+                { icon: '🍀', isHeart: false },
+                { icon: '🎁', isHeart: false },
+                { icon: '💘', isHeart: true },
+                { icon: '🦋', isHeart: false },
+                { icon: '🎈', isHeart: false },
+                { icon: '❤️', isHeart: true },
+                { icon: '🔮', isHeart: false },
+                { icon: '🎀', isHeart: false },
+                { icon: '💕', isHeart: true }
+            ];
+
+            itemsData.sort(() => Math.random() - 0.5);
+
+            itemsData.forEach((itemData) => {
+                const itemBox = document.createElement('div');
+                itemBox.classList.add('grid-item');
+                itemBox.innerText = itemData.icon;
+
+                itemBox.onclick = () => {
+                    if (itemData.isHeart) {
+                        if (!itemBox.classList.contains('found')) {
+                            itemBox.classList.add('found');
+                            foundCount++;
+                            if (heartsFoundCount) heartsFoundCount.innerText = foundCount;
+
+                            if (foundCount === totalHearts) {
+                                if (level1Victory) level1Victory.classList.remove('hidden');
+                            }
+                        }
+                    } else {
+                        itemBox.classList.add('shake');
+                        setTimeout(() => {
+                            itemBox.classList.remove('shake');
+                        }, 400);
+                    }
+                };
+
+                findGrid.appendChild(itemBox);
+            });
+
+            if (btnNextLevel1) {
+                btnNextLevel1.onclick = () => {
+                    document.getElementById('level-1').classList.remove('active');
+                    document.getElementById('level-2').classList.add('active');
+                    document.getElementById('progressBar').style.width = '32%';
+                    initLevel2();
+                };
+            }
+        }
+
+        // ==========================================
+        // LÓGICA DEL NIVEL 2: MEMOTEST
+        // ==========================================
+        function initLevel2() {
+            const memoryGrid = document.getElementById('memoryGrid');
+            const level2Victory = document.getElementById('level2-victory');
+            const btnNextLevel2 = document.getElementById('btn-next-level-2');
+
+            if (!memoryGrid) return;
+            memoryGrid.innerHTML = '';
+
+            const icons = ['👩‍❤️‍👨', '💌', '💍', '🌹'];
+            let cardsData = [...icons, ...icons];
+            cardsData.sort(() => Math.random() - 0.5);
+
+            let flippedCards = [];
+            let matchedPairs = 0;
+            let canFlip = true;
+
+            cardsData.forEach((icon) => {
+                const cardBox = document.createElement('div');
+                cardBox.classList.add('memory-card');
+                cardBox.dataset.icon = icon;
+                cardBox.innerText = '❓';
+
+                cardBox.onclick = () => {
+                    if (!canFlip || cardBox.classList.contains('flipped') || cardBox.classList.contains('matched')) {
+                        return;
+                    }
+
+                    cardBox.classList.add('flipped');
+                    cardBox.innerText = icon;
+                    flippedCards.push(cardBox);
+
+                    if (flippedCards.length === 2) {
+                        canFlip = false;
+                        const [card1, card2] = flippedCards;
+
+                        if (card1.dataset.icon === card2.dataset.icon) {
+                            card1.classList.add('matched');
+                            card2.classList.add('matched');
+                            matchedPairs++;
+                            flippedCards = [];
+                            canFlip = true;
+
+                            if (matchedPairs === icons.length) {
+                                setTimeout(() => {
+                                    if (level2Victory) level2Victory.classList.remove('hidden');
+                                }, 400);
+                            }
+                        } else {
+                            setTimeout(() => {
+                                card1.classList.remove('flipped');
+                                card2.classList.remove('flipped');
+                                card1.innerText = '❓';
+                                card2.innerText = '❓';
+                                flippedCards = [];
+                                canFlip = true;
+                            }, 700);
+                        }
+                    }
+                };
+
+                memoryGrid.appendChild(cardBox);
+            });
+
+            if (btnNextLevel2) {
+                btnNextLevel2.onclick = () => {
+                    document.getElementById('level-2').classList.remove('active');
+                    document.getElementById('level-3').classList.add('active');
+                    document.getElementById('progressBar').style.width = '48%';
+                    initLevel3();
+                };
+            }
+        }
+
+        // ==========================================
+        // LÓGICA DEL NIVEL 3: QUIZ
+        // ==========================================
+        function initLevel3() {
+            const quizQuestion = document.getElementById('quiz-question');
+            const quizOptions = document.getElementById('quiz-options');
+            const quizStepIndicator = document.getElementById('quiz-step-indicator');
+            const level3Victory = document.getElementById('level3-victory');
+            const btnNextLevel3 = document.getElementById('btn-next-level-3');
+
+            const questions = [
+                {
+                    question: "¿La primera vez que hablamos fue?",
+                    options: ["Afuera de la casa de cultura", "Cuando me pediste el celu para hablar con tu mamá", "Cuando bailamos en Sansa"],
+                    correctIndex: 0
+                },
+                {
+                    question: "¿El día que nos descubren besándonos fue un...?",
+                    options: ["Martes", "Miércoles", "Jueves"],
+                    correctIndex: 2
+                },
+                {
+                    question: "¿Si ser linda fuera un delito...?",
+                    options: ["Yo sería un fiscal de juzgado y vos la ministra de tribunales", "Yo sería una silla y vos una kaka con vómito", "Yo sería el policía que te encerró"],
+                    correctIndex: 0
+                }
+            ];
+
+            let currentQuestionIndex = 0;
+
+            function renderQuestion() {
+                if (!quizQuestion || !quizOptions) return;
+
+                const q = questions[currentQuestionIndex];
+                quizStepIndicator.innerText = `Pregunta ${currentQuestionIndex + 1} de ${questions.length} 📝`;
+                quizQuestion.innerText = q.question;
+                quizOptions.innerHTML = '';
+
+                q.options.forEach((optText, index) => {
+                    const btnOpt = document.createElement('button');
+                    btnOpt.type = 'button';
+                    btnOpt.classList.add('quiz-btn-option');
+                    btnOpt.innerText = optText;
+
+                    btnOpt.onclick = () => {
+                        if (index === q.correctIndex) {
+                            btnOpt.classList.add('correct');
+                            const allBtns = quizOptions.querySelectorAll('.quiz-btn-option');
+                            allBtns.forEach(b => b.style.pointerEvents = 'none');
+
+                            setTimeout(() => {
+                                currentQuestionIndex++;
+                                if (currentQuestionIndex < questions.length) {
+                                    renderQuestion();
+                                } else {
+                                    quizStepIndicator.style.display = 'none';
+                                    quizQuestion.style.display = 'none';
+                                    quizOptions.style.display = 'none';
+                                    if (level3Victory) level3Victory.classList.remove('hidden');
+                                }
+                            }, 800);
+                        } else {
+                            btnOpt.classList.add('wrong');
+                            setTimeout(() => {
+                                btnOpt.classList.remove('wrong');
+                            }, 500);
+                        }
+                    };
+
+                    quizOptions.appendChild(btnOpt);
+                });
+            }
+
+            renderQuestion();
+
+            if (btnNextLevel3) {
+                btnNextLevel3.onclick = () => {
+                    document.getElementById('level-3').classList.remove('active');
+                    document.getElementById('level-4').classList.add('active');
+                    document.getElementById('progressBar').style.width = '64%';
+                    initLevel4();
+                };
+            }
+        }
+
+        // ==========================================
+        // LÓGICA DEL NIVEL 4: ATRAPA LOS CORAZONES
+        // ==========================================
+        function initLevel4() {
+            const catchGameArea = document.getElementById('catchGameArea');
+            const catchCountEl = document.getElementById('catch-count');
+            const level4Victory = document.getElementById('level4-victory');
+            const btnNextLevel4 = document.getElementById('btn-next-level-4');
+
+            if (!catchGameArea) return;
+            catchGameArea.innerHTML = '';
+
+            let caughtCount = 0;
+            const targetHearts = 5;
+            let spawnInterval;
+
+            function spawnHeart() {
+                if (caughtCount >= targetHearts) {
+                    clearInterval(spawnInterval);
+                    return;
+                }
+
+                const heart = document.createElement('div');
+                heart.classList.add('falling-heart');
+                heart.innerText = ['💖', '❤️', '💕', '💘'][Math.floor(Math.random() * 4)];
+                heart.style.left = Math.random() * 80 + 10 + '%';
+
+                heart.onclick = () => {
+                    caughtCount++;
+                    if (catchCountEl) catchCountEl.innerText = caughtCount;
+                    heart.remove();
+
+                    if (caughtCount >= targetHearts) {
+                        clearInterval(spawnInterval);
+                        if (level4Victory) level4Victory.classList.remove('hidden');
+                    }
+                };
+
+                catchGameArea.appendChild(heart);
+
+                setTimeout(() => {
+                    if (heart.parentNode) heart.remove();
+                }, 2500);
+            }
+
+            spawnInterval = setInterval(spawnHeart, 900);
+
+            if (btnNextLevel4) {
+                btnNextLevel4.onclick = () => {
+                    document.getElementById('level-4').classList.remove('active');
+                    document.getElementById('level-5').classList.add('active');
+                    document.getElementById('progressBar').style.width = '84%';
+                    initLevel5();
+                };
+            }
+        }
+
+        // ==========================================
+        // LÓGICA DEL NIVEL 5: ROMPECABEZAS (MEZCLADO)
+        // ==========================================
+        function initLevel5() {
+            const puzzleGrid = document.getElementById('puzzleGrid');
+            const level5Victory = document.getElementById('level5-victory');
+            const btnNextLevel5 = document.getElementById('btn-next-level-5');
+
+            if (!puzzleGrid) return;
+            puzzleGrid.innerHTML = '';
+
+            const goalState = [1, 2, 3, 4, 5, 6, 7, 8, ''];
+            let board = [2, 1, 3, 5, 4, 6, 7, '', 8]; 
+
+            function canMove(idx, emptyIdx) {
+                const row = Math.floor(idx / 3);
+                const col = idx % 3;
+                const emptyRow = Math.floor(emptyIdx / 3);
+                const emptyCol = emptyIdx % 3;
+
+                const isSameRowAdjacent = (row === emptyRow) && Math.abs(col - emptyCol) === 1;
+                const isSameColAdjacent = (col === emptyCol) && Math.abs(row - emptyRow) === 1;
+
+                return isSameRowAdjacent || isSameColAdjacent;
+            }
+
+            function renderBoard() {
+                puzzleGrid.innerHTML = '';
+                board.forEach((val, idx) => {
+                    const tile = document.createElement('div');
+                    tile.classList.add('puzzle-tile');
+                    if (val === '') {
+                        tile.classList.add('empty');
+                    } else {
+                        tile.innerText = val;
+                    }
+
+                    tile.onclick = () => {
+                        const emptyIdx = board.indexOf('');
+
+                        if (canMove(idx, emptyIdx)) {
+                            board[emptyIdx] = board[idx];
+                            board[idx] = '';
+                            renderBoard();
+                            checkWin();
+                        }
+                    };
+
+                    puzzleGrid.appendChild(tile);
+                });
+            }
+
+            function checkWin() {
+                if (JSON.stringify(board) === JSON.stringify(goalState)) {
+                    if (level5Victory) level5Victory.classList.remove('hidden');
+                }
+            }
+
+            renderBoard();
+
+            if (btnNextLevel5) {
+                btnNextLevel5.onclick = () => {
+                    document.getElementById('level-5').classList.remove('active');
+                    document.getElementById('level-final').classList.add('active');
+                    document.getElementById('progressBar').style.width = '100%';
+                };
+            }
+        }
+    });
+</script>
+</body>
+</html>
